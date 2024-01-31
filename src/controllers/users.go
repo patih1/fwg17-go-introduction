@@ -1,10 +1,13 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/patih1/fwg17-go-backend/src/models"
 )
 
 type PageInfo struct {
@@ -22,6 +25,11 @@ type User struct {
 	Id       int    `json:"id"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type ResponseOnly struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }
 
 func ListAllUsers(c *gin.Context) {
@@ -43,7 +51,34 @@ func ListAllUsers(c *gin.Context) {
 				Id:       1,
 				Email:    "hai@mail.com",
 				Password: "1234",
+			}, {
+				Id:       2,
+				Email:    "haid@mail.com",
+				Password: "123",
 			},
 		},
+	})
+}
+
+func CreateUser(c *gin.Context) {
+	data := models.User{}
+
+	c.Bind(data)
+
+	user, err := models.CreateUser(data)
+
+	if err != nil {
+		log.Fatalln()
+		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		fmt.Println("asw")
+	}
+
+	c.JSON(http.StatusOK, &Response{
+		Success: true,
+		Message: "create user successfully",
+		Results: user,
 	})
 }
