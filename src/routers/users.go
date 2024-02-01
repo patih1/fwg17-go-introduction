@@ -9,4 +9,5 @@ func UserRouter(r *gin.RouterGroup) {
 	r.GET("", controllers.ListAllUsers)
 	r.GET("/:id", controllers.DetailUser)
 	r.POST("", controllers.CreateUser)
+	r.PATCH("/:id", controllers.UpdateUser)
 }

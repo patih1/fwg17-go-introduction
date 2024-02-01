@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -19,12 +17,6 @@ type Response struct {
 	Message  string      `json:"message"`
 	Pageinfo PageInfo    `json:"pageInfo"`
 	Results  interface{} `json:"results"`
-}
-
-type User struct {
-	Id       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
 }
 
 type ResponseOnly struct {
@@ -78,17 +70,18 @@ func DetailUser(c *gin.Context) {
 func CreateUser(c *gin.Context) {
 	data := models.User{}
 
-	c.Bind(data)
+	c.Bind(&data)
+	// fmt.Println(data)
 
 	user, err := models.Create(data)
 
 	if err != nil {
-		log.Fatalln(err)
+		// log.Fatalln(err)
 		c.JSON(http.StatusInternalServerError, &ResponseOnly{
 			Success: false,
 			Message: "internal server error",
 		})
-		fmt.Println("asw")
+		return
 	}
 
 	c.JSON(http.StatusOK, &Response{
@@ -96,4 +89,30 @@ func CreateUser(c *gin.Context) {
 		Message: "create user successfully",
 		Results: user,
 	})
+}
+
+func UpdateUser(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+	data := models.User{}
+
+	c.Bind(&data)
+	data.Id = id
+
+	user, err := models.Update(data)
+
+	if err != nil {
+		// log.Fatalln(err)
+		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &Response{
+		Success: true,
+		Message: "update user successfully",
+		Results: user,
+	})
+
 }
