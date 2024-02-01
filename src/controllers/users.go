@@ -33,30 +33,45 @@ type ResponseOnly struct {
 }
 
 func ListAllUsers(c *gin.Context) {
-	// id := c.Param("id")
+
 	page, _ := strconv.Atoi(c.Query("page"))
-	// data := map[string]interface{}{
-	// 	"id":       id,
-	// 	"fullName": "Khairullah Haidar",
-	// 	"email":    "haidar@mail.com",
-	// }
+
+	users, err := models.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, &Response{
 		Success: true,
-		Message: "OK",
+		Message: "list all users",
 		Pageinfo: PageInfo{
 			Page: page,
 		},
-		Results: []User{
-			{
-				Id:       1,
-				Email:    "hai@mail.com",
-				Password: "1234",
-			}, {
-				Id:       2,
-				Email:    "haid@mail.com",
-				Password: "123",
-			},
-		},
+		Results: users,
+	})
+}
+
+func DetailUser(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	user, err := models.FindOne(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &Response{
+		Success: true,
+		Message: "detail user",
+		Results: user,
 	})
 }
 
@@ -65,10 +80,10 @@ func CreateUser(c *gin.Context) {
 
 	c.Bind(data)
 
-	user, err := models.CreateUser(data)
+	user, err := models.Create(data)
 
 	if err != nil {
-		log.Fatalln()
+		log.Fatalln(err)
 		c.JSON(http.StatusInternalServerError, &ResponseOnly{
 			Success: false,
 			Message: "internal server error",

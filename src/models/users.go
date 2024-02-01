@@ -23,7 +23,21 @@ type User struct {
 	UpdatedAt   gonull.Nullable[time.Time] `db:"updatedAt" json:"updatedAt"`
 }
 
-func CreateUser(data User) (User, error) {
+func FindAll() ([]User, error) {
+	sql := `SELECT * FROM "users"`
+	data := []User{}
+	err := db.Select(&data, sql)
+	return data, err
+}
+
+func FindOne(id int) (User, error) {
+	sql := `SELECT * FROM "users" WHERE "id" = $1`
+	data := User{}
+	err := db.Get(&data, sql, id)
+	return data, err
+}
+
+func Create(data User) (User, error) {
 	sql := `INSERT INTO "users" ("fullName", "email", "password") VALUES (:fullName, :email, :password) RETURNING *`
 	result := User{}
 	rows, err := db.NamedQuery(sql, data)

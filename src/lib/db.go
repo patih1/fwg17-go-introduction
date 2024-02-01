@@ -8,7 +8,7 @@ import (
 )
 
 func conn() *sqlx.DB {
-	db, err := sqlx.Connect("postgres", "user=postgres dbname=go-crud password=1 sslmode=disable ")
+	db, err := sqlx.Connect("postgres", "user=postgres dbname=go-crud password=1 sslmode=disable")
 	if err != nil {
 		log.Fatalln(err)
 	}
