@@ -71,3 +71,10 @@ func Update(data User) (User, error) {
 	}
 	return result, err
 }
+
+func Delete(id int) (User, error) {
+	sql := `DELETE FROM "users" WHERE "id" = $1 RETURNING *`
+	data := User{}
+	err := db.Get(&data, sql, id)
+	return data, err
+}

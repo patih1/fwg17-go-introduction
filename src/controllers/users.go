@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -115,4 +116,25 @@ func UpdateUser(c *gin.Context) {
 		Results: user,
 	})
 
+}
+
+func DeleteUser(c *gin.Context) {
+	id, _ := strconv.Atoi(c.Param("id"))
+
+	user, err := models.Delete(id)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		log.Fatalln(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, &Response{
+		Success: true,
+		Message: "delete user successfully",
+		Results: user,
+	})
 }
