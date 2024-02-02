@@ -72,8 +72,12 @@ func DetailUser(c *gin.Context) {
 func CreateUser(c *gin.Context) {
 	data := models.User{}
 
+	argon := argon2.DefaultConfig()
+
 	c.Bind(&data)
-	// fmt.Println(data)
+
+	encoded, err := argon.HashEncoded([]byte(data.Password))
+	data.Password = string(encoded)
 
 	user, err := models.Create(data)
 
