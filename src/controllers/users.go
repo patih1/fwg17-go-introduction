@@ -1,11 +1,12 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/matthewhartstonge/argon2"
+	_ "github.com/matthewhartstonge/argon2"
 	"github.com/patih1/fwg17-go-backend/src/models"
 )
 
@@ -96,8 +97,12 @@ func UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	data := models.User{}
 
+	argon := argon2.DefaultConfig()
+
 	c.Bind(&data)
 	data.Id = id
+	encoded, err := argon.HashEncoded([]byte(data.Password))
+	data.Password = string(encoded)
 
 	user, err := models.Update(data)
 
@@ -128,7 +133,6 @@ func DeleteUser(c *gin.Context) {
 			Success: false,
 			Message: "internal server error",
 		})
-		log.Fatalln(err)
 		return
 	}
 
