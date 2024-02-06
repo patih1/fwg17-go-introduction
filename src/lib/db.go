@@ -2,13 +2,20 @@ package lib
 
 import (
 	"log"
+	"os"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func conn() *sqlx.DB {
-	db, err := sqlx.Connect("postgres", "user=postgres dbname=go-crud password=1 sslmode=disable")
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	db, err := sqlx.Connect("postgres", os.Getenv("DATABASE_CONN"))
 	if err != nil {
 		log.Fatalln(err)
 	}

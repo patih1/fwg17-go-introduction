@@ -1,51 +1,48 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
+	"math"
 	"net/http"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/matthewhartstonge/argon2"
-	_ "github.com/matthewhartstonge/argon2"
 	"github.com/patih1/fwg17-go-backend/src/models"
+	"github.com/patih1/fwg17-go-backend/src/services"
 )
 
-type PageInfo struct {
-	Page int `json:"page"`
-}
-
-type Response struct {
-	Success  bool        `json:"success"`
-	Message  string      `json:"message"`
-	Pageinfo PageInfo    `json:"pageInfo"`
-	Results  interface{} `json:"results"`
-}
-
-type ResponseOnly struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-}
-
 func ListAllUsers(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	search := c.DefaultQuery("search", "")
+	// sortBy := c.DefaultQuery("sortBy", "id")
+	offset := (page - 1) * limit
+	result, err := models.FindAll(limit, offset, search)
 
-	page, _ := strconv.Atoi(c.Query("page"))
+	pageInfo := services.PageInfo{
+		Page:      page,
+		Limit:     limit,
+		LastPage:  int(math.Ceil(float64(result.Count) / float64(limit))),
+		TotalData: result.Count,
+	}
 
-	users, err := models.FindAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
 			Success: false,
 			Message: "internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, &Response{
-		Success: true,
-		Message: "list all users",
-		Pageinfo: PageInfo{
-			Page: page,
-		},
-		Results: users,
+	c.JSON(http.StatusOK, &services.Response{
+		Success:  true,
+		Message:  "list all users",
+		Pageinfo: pageInfo,
+		Results:  result.Data,
 	})
 }
 
@@ -55,14 +52,14 @@ func DetailUser(c *gin.Context) {
 	user, err := models.FindOne(id)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
 			Success: false,
 			Message: "internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, &Response{
+	c.JSON(http.StatusOK, &services.Response{
 		Success: true,
 		Message: "detail user",
 		Results: user,
@@ -70,27 +67,35 @@ func DetailUser(c *gin.Context) {
 }
 
 func CreateUser(c *gin.Context) {
-	data := models.User{}
+	data := services.User{}
 
 	argon := argon2.DefaultConfig()
 
-	c.Bind(&data)
+	c.ShouldBind(&data)
 
-	encoded, err := argon.HashEncoded([]byte(data.Password))
-	data.Password = string(encoded)
+	// fmt.Println(data.Password)
 
-	user, err := models.Create(data)
-
-	if err != nil {
-		// log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+	if data.Password == "" {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
 			Success: false,
-			Message: "internal server error",
+			Message: "Password cannot be empty",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, &Response{
+	encoded, _ := argon.HashEncoded([]byte(data.Password))
+	data.Password = string(encoded)
+	user, err := models.Create(data)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "email already existed",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &services.Response{
 		Success: true,
 		Message: "create user successfully",
 		Results: user,
@@ -99,27 +104,31 @@ func CreateUser(c *gin.Context) {
 
 func UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
-	data := models.User{}
+	data := services.ToUpdateUser{}
 
 	argon := argon2.DefaultConfig()
 
-	c.Bind(&data)
+	c.ShouldBind(&data)
+	fmt.Println(reflect.TypeOf(data))
 	data.Id = id
-	encoded, err := argon.HashEncoded([]byte(data.Password))
-	data.Password = string(encoded)
+
+	if data.Password != "" {
+		encoded, _ := argon.HashEncoded([]byte(data.Password))
+		data.Password = string(encoded)
+	}
 
 	user, err := models.Update(data)
 
 	if err != nil {
 		// log.Fatalln(err)
-		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
 			Success: false,
 			Message: "internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, &Response{
+	c.JSON(http.StatusOK, &services.Response{
 		Success: true,
 		Message: "update user successfully",
 		Results: user,
@@ -133,16 +142,69 @@ func DeleteUser(c *gin.Context) {
 	user, err := models.Delete(id)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, &ResponseOnly{
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
 			Success: false,
 			Message: "internal server error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, &Response{
+	c.JSON(http.StatusOK, &services.Response{
 		Success: true,
 		Message: "delete user successfully",
+		Results: user,
+	})
+}
+
+func DynamicCreateUser(c *gin.Context) {
+	data := services.User{}
+
+	argon := argon2.DefaultConfig()
+
+	c.ShouldBind(&data)
+
+	var col []string
+	var values []string
+
+	// fmt.Println(data.Password)
+
+	if data.Password == "" {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "Password cannot be empty",
+		})
+		return
+	}
+
+	encoded, _ := argon.HashEncoded([]byte(data.Password))
+	data.Password = string(encoded)
+
+	val := reflect.ValueOf(data)
+	types := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		if types.Field(i).Name != "Id" {
+
+			col = append(col, fmt.Sprint(`"`, strings.ToLower(types.Field(i).Name[:1])+types.Field(i).Name[1:]), `"`)
+			values = append(values, fmt.Sprint(`'`, types.Field(i)), `'`)
+			fmt.Println(types.Field(i))
+		}
+
+	}
+	user, err := models.DynamicCreate(col, values)
+
+	if err != nil {
+		log.Fatal(err)
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, &services.Response{
+		Success: true,
+		Message: "create user successfully",
 		Results: user,
 	})
 }

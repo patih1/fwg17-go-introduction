@@ -5,7 +5,9 @@ go 1.21.6
 require (
 	github.com/LukaGiorgadze/gonull v1.2.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/jmoiron/sqlx v1.3.5
+	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.2.0
 	github.com/matthewhartstonge/argon2 v1.0.0
 )
