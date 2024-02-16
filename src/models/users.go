@@ -13,12 +13,14 @@ var db *sqlx.DB = lib.DB
 
 func FindAll(limit int, offset int, search string) (services.Info, error) {
 	sql := `SELECT * FROM "users" WHERE "fullName" ILIKE $3 ORDER BY "id" ASC LIMIT $1 OFFSET $2`
-	sqlCount := `SELECT COUNT(*) FROM "users"`
+	sqlCount := fmt.Sprintf(`SELECT COUNT(*) FROM "users" WHERE "fullName" ILIKE '%%%v%%'`, search)
 	result := services.Info{}
 	data := []services.User{}
 	fmtSearch := fmt.Sprintf("%%%v%%", search)
 	err := db.Select(&data, sql, limit, offset, fmtSearch)
 	result.Data = data
+
+	fmt.Print(err)
 
 	row := db.QueryRow(sqlCount)
 	err = row.Scan(&result.Count)
@@ -27,14 +29,14 @@ func FindAll(limit int, offset int, search string) (services.Info, error) {
 	return result, err
 }
 
-func FindOne(id int) (services.User, error) {
+func FindOne(id *int) (services.User, error) {
 	sql := `SELECT * FROM "users" WHERE "id" = $1`
 	data := services.User{}
 	err := db.Get(&data, sql, id)
 	return data, err
 }
 
-func FindEmail(email string) (services.User, error) {
+func FindEmail(email *string) (services.User, error) {
 	sql := `SELECT * FROM "users" WHERE "email" = $1`
 	data := services.User{}
 	err := db.Get(&data, sql, email)
@@ -42,10 +44,12 @@ func FindEmail(email string) (services.User, error) {
 }
 
 func Create(data services.User) (services.User, error) {
-	sql := `INSERT INTO "users" ("fullName", "email", "password", "address") VALUES (:fullName, :email, :password, :address
-		) RETURNING *`
+	sql := `
+	INSERT INTO "users" ("fullName", "email", "password") 
+	VALUES 
+	(:fullName, :email, :password) 
+	RETURNING *`
 	result := services.User{}
-	// fmt.Println(result)
 	rows, err := db.NamedQuery(sql, data)
 
 	if err != nil {
@@ -55,26 +59,25 @@ func Create(data services.User) (services.User, error) {
 	for rows.Next() {
 		rows.StructScan(&result)
 	}
-	fmt.Println(rows)
 	return result, err
 }
 
-// "role"=COALESCE(NULLIF(:role,''),"role"),
+func DynamicCreate(col []string, values []string) (services.User, error) {
+	sql := fmt.Sprint(`INSERT INTO "users" (`, strings.Join(col, ", "), `) VALUES (`, strings.Join(values, ", "), `) RETURNING *`)
+	data := services.User{}
+	err := db.Get(&data, sql)
+	return data, err
+}
 
-func Update(data services.ToUpdateUser) (services.ToUpdateUser, error) {
+func UpdatePassword(data services.User) (services.User, error) {
 	sql := `UPDATE "users" SET 
-	"fullName"=COALESCE(NULLIF(:fullName,''),"fullName"),
-	"email"=COALESCE(NULLIF(:email,''),"email"),
 	"password"=COALESCE(NULLIF(:password,''),"password"),
-	"address"=COALESCE(NULLIF(:address,''),"address"),
-	"picture"=COALESCE(NULLIF(:picture,''),"picture"),
-	"phoneNumber"=COALESCE(NULLIF(:phoneNumber,''),"phoneNumber"),
 	"updatedAt"=now()
 	WHERE "id"=:id
 	RETURNING *
 	`
 
-	result := services.ToUpdateUser{}
+	result := services.User{}
 	rows, err := db.NamedQuery(sql, data)
 
 	for rows.Next() {
@@ -83,27 +86,16 @@ func Update(data services.ToUpdateUser) (services.ToUpdateUser, error) {
 	return result, err
 }
 
-func Delete(id int) (services.User, error) {
-	sql := `DELETE FROM "users" WHERE "id" = $1 RETURNING *`
+func DynamicUpdate(values []string, id int) (services.User, error) {
+	sql := fmt.Sprint(`UPDATE "users" SET`, strings.Join(values, ", "), `, "updatedAt"=now() WHERE "id"=$1 RETURNING *`)
 	data := services.User{}
 	err := db.Get(&data, sql, id)
 	return data, err
 }
 
-func DynamicCreate(col []string, values []string) (services.User, error) {
-
-	// var col []string
-	sql := fmt.Sprint(`INSERT INTO "users" (`, strings.Join(col, `",`), `") VALUES (`, strings.Join(values, ", "), `) RETURNING *`)
+func Delete(id int) (services.User, error) {
+	sql := `DELETE FROM "users" WHERE "id" = $1 RETURNING *`
 	data := services.User{}
-	err := db.Get(&data, sql)
+	err := db.Get(&data, sql, id)
 	return data, err
-	// fmt.Println(result)
-	// rows, err := db.NamedQuery(sql, data)
-
-	// for rows.Next() {
-	// 	rows.StructScan(&result)
-	// }
-	// fmt.Println(rows)
-	// return result, err
-
 }

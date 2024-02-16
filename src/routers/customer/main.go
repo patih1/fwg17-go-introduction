@@ -1,4 +1,4 @@
-package admin
+package customer
 
 import (
 	"github.com/gin-gonic/gin"
@@ -9,5 +9,4 @@ func Combine(r *gin.RouterGroup) {
 	authMiddleware, _ := middlewares.Auth()
 	r.Use(authMiddleware.MiddlewareFunc())
 	UserRouter(r.Group("/user"))
-	ProductRouter(r.Group("/product"))
 }
