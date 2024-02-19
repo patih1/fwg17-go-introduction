@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  web-app:
+    container_name: golang
+    build: .
+    ports:
+      - 1234:8888
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    ports:
+      - 8070:5432
+    environment:
+      - POSTGRES_DB=coffeeshop
+      - POSTGRES_PASSWORD=1
+      - POSTGRES_USER=master

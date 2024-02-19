@@ -84,8 +84,8 @@ func UpdateUser(c *gin.Context) {
 		if x != "Id" && x != "Role" && x != "CreatedAt" && x != "UpdatedAt" {
 
 			// check for empty field
-			if val.Elem().Field(i).IsNil() == false {
-				y := fmt.Sprint(`"`, strings.ToLower(x[:1])+x[1:], `"='`, val.Elem().FieldByName(x).Elem().Interface().(any), `'`)
+			if !val.Elem().Field(i).IsNil() {
+				y := fmt.Sprint(`"`, strings.ToLower(x[:1])+x[1:], `"='`, val.Elem().FieldByName(x).Elem().Interface(), `'`)
 				values = append(values, y)
 			}
 		}

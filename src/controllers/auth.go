@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/matthewhartstonge/argon2"
 	"github.com/patih1/fwg17-go-backend/src/lib"
+	middlewares "github.com/patih1/fwg17-go-backend/src/middleware"
 	"github.com/patih1/fwg17-go-backend/src/models"
 	"github.com/patih1/fwg17-go-backend/src/services"
 )
@@ -129,4 +130,10 @@ func ForgotPassword(c *gin.Context) {
 		Success: false,
 		Message: "internal server error",
 	})
+}
+
+func GetLogedId(c *gin.Context) int {
+	x, _ := middlewares.Auth()
+	data := x.IdentityHandler(c).(*services.Login)
+	return data.Id
 }

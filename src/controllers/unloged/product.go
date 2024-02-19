@@ -12,7 +12,7 @@ import (
 
 func ListAllProduct(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "6"))
 	search := c.DefaultQuery("search", "")
 	// sortBy := c.DefaultQuery("sortBy", "id")
 	offset := (page - 1) * limit

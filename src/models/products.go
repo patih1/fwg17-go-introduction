@@ -41,6 +41,18 @@ func FindOneProduct(id *int) (services.Product, error) {
 	return data, err
 }
 
+func FindProductPrice(id *int) (services.ProductPrice, error) {
+	sql := `SELECT "basePrice" FROM "products" WHERE
+	"id" = $1`
+	// sql := `SELECT "p"."id", "p"."name", "p"."image", "p"."discount", "p"."isRecommended", "p"."basePrice", "p"."description", "p"."createdAt", "p"."updatedAt", "c"."name" as "category" FROM "products" "p"
+	// join "productCategories" "pc" on "pc"."productId" = "p"."id"
+	// join "categories" "c" on "c"."id" = "pc"."categoryId"
+	// WHERE "p"."id" = $1`
+	data := services.ProductPrice{}
+	err := db.Get(&data, sql, id)
+	return data, err
+}
+
 func CreateProduct(col []string, values []string) (services.Product, error) {
 	sql := fmt.Sprint(`INSERT INTO "products" (`, strings.Join(col, ", "), `) VALUES (`, strings.Join(values, ", "), `) RETURNING *`)
 	data := services.Product{}

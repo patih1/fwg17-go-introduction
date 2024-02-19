@@ -23,5 +23,6 @@ func main() {
 			Message: "Resource not found restart on changes",
 		})
 	})
+	// r.Run(":8888")
 	r.Run("127.0.0.1:8888")
 }
