@@ -108,6 +108,17 @@ type OrderDetails struct {
 	UpdatedAt        *time.Time `db:"updatedAt" json:"updatedAt"`
 }
 
+type ODWithPDetail struct {
+	Id               int     `db:"id" json:"id"`
+	Name             *string `db:"name" json:"name"`
+	ProductId        *int    `db:"productId" json:"productId"`
+	ProductSizeId    *int    `db:"productSizeId" json:"productSizeId"`
+	ProductVariantId *int    `db:"productVariantId" json:"productVariantId"`
+	Quantity         *int    `db:"quantity" json:"quantity"`
+	OrderId          *int    `db:"orderId" json:"orderId"`
+	SubTotal         *int    `db:"subTotal" json:"subTotal"`
+}
+
 // orders
 type Orders struct {
 	Id              int        `db:"id" json:"id"`

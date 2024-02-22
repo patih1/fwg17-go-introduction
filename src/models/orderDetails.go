@@ -32,12 +32,23 @@ func FindOneOrderDetails(id *int) (services.OrderDetails, error) {
 	return data, err
 }
 
-func FindHistoryOD(id *int) (services.OrderDetails, error) {
-	sql := `SELECT * FROM "orderDetails" WHERE
-	"orderId" = $1`
-	data := services.OrderDetails{}
-	err := db.Get(&data, sql, id)
-	return data, err
+func FindHistoryOD(id int, limit int, offset int) (services.Info, error) {
+	sql := `SELECT "od"."id", "p"."name", "od"."productId", "od"."productSizeId", "od"."productVariantId", "od"."quantity", "od"."orderId", "od"."subTotal"  FROM "orderDetails" "od" 
+	JOIN "products" "p" ON "p"."id" = "productId"
+	WHERE "orderId" = $1
+	ORDER BY "id" ASC LIMIT $2 OFFSET $3`
+	sqlCount := fmt.Sprintf(`SELECT COUNT(*) FROM "orderDetails" WHERE "orderId" = %v`, id)
+	result := services.Info{}
+	data := []services.ODWithPDetail{}
+	err := db.Select(&data, sql, id, limit, offset)
+	result.Data = data
+
+	fmt.Print(err)
+
+	row := db.QueryRow(sqlCount)
+	err = row.Scan(&result.Count)
+
+	return result, err
 }
 
 func CreateOrderDetails(col []string, values []string) (services.OrderDetails, error) {

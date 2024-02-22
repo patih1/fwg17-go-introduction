@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/patih1/fwg17-go-backend/src/controllers"
+	"github.com/patih1/fwg17-go-backend/src/lib"
 	"github.com/patih1/fwg17-go-backend/src/models"
 	"github.com/patih1/fwg17-go-backend/src/services"
 )
@@ -51,19 +52,20 @@ func CreateOrders(c *gin.Context) {
 			}
 		}
 	}
+	Tx, _ := lib.DB.Beginx()
+
 	order, err := models.CreateOrders(col, values)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "HAHAA! YOU FAILEDDD",
+		})
+		Tx.Rollback()
+		return
+	}
 
 	col = nil
 	values = nil
-
-	if err != nil {
-		log.Fatal(err)
-		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
-			Success: false,
-			Message: "internal server error",
-		})
-		return
-	}
 
 	orderDetail := services.OrderDetails{}
 	c.ShouldBind(&orderDetail)
@@ -101,8 +103,32 @@ func CreateOrders(c *gin.Context) {
 
 	tax := total * 1 / 10
 
-	models.CreateOrderDetails(col, values)
-	result, _ := models.UpdateOrdersCS(order.Id, total, tax)
+	_, errDetail := models.CreateOrderDetails(col, values)
+
+	if errDetail != nil {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "DETAIL GONE!!",
+		})
+		Tx.Rollback()
+		return
+	}
+
+	result, errRes := models.UpdateOrdersCS(order.Id, total, tax)
+
+	if errRes != nil {
+		c.JSON(http.StatusInternalServerError, &services.ResponseOnly{
+			Success: false,
+			Message: "UPDATE FAILED BABYYY!",
+		})
+		Tx.Rollback()
+		return
+	}
+
+	commitErr := Tx.Commit()
+	if commitErr == nil {
+		fmt.Println("BERHASIL GES")
+	}
 
 	c.JSON(http.StatusOK, &services.Response{
 		Success: true,
@@ -160,10 +186,21 @@ func HistoryOrder(c *gin.Context) {
 
 func DetailHistory(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	offset := (page - 1) * limit
 
-	user, err := models.FindHistoryOD(&id)
+	result, err := models.FindHistoryOD(id, limit, offset)
+
+	pageInfo := services.PageInfo{
+		Page:      page,
+		Limit:     limit,
+		LastPage:  int(math.Ceil(float64(result.Count) / float64(limit))),
+		TotalData: result.Count,
+	}
 
 	if err != nil {
+		log.Fatal(err)
 		c.JSON(http.StatusNotFound, &services.ResponseOnly{
 			Success: false,
 			Message: "product not found",
@@ -171,9 +208,26 @@ func DetailHistory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, &services.Response{
-		Success: true,
-		Message: "order detail",
-		Results: user,
+	// if pageInfo.TotalData == 0 {
+	// 	c.JSON(http.StatusNotFound, &services.ResponseOnly{
+	// 		Success: false,
+	// 		Message: "not data",
+	// 	})
+	// 	return
+	// }
+
+	// if pageInfo.Page <= 0 || pageInfo.Page > pageInfo.LastPage {
+	// 	c.JSON(http.StatusNotFound, &services.ResponseOnly{
+	// 		Success: false,
+	// 		Message: "not found",
+	// 	})
+	// 	return
+	// }
+
+	c.JSON(http.StatusOK, &services.ResponseWPage{
+		Success:  true,
+		Message:  "list all order",
+		Pageinfo: pageInfo,
+		Results:  result.Data,
 	})
 }
