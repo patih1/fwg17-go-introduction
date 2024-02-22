@@ -8,6 +8,7 @@ services:
       - 1234:8888
     depends_on:
       - db
+    restart: always
 
   db:
     image: postgres
