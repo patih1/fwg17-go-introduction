@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -168,6 +169,7 @@ func UpdateUser(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 	data := services.User{}
 
+	oldFile, _ := models.FindOne(&id)
 	// Argon Config
 	argon := argon2.DefaultConfig()
 
@@ -187,6 +189,7 @@ func UpdateUser(c *gin.Context) {
 		data.Picture = nil
 	} else {
 		data.Picture = &file
+		os.Remove(*oldFile.Picture)
 	}
 
 	if data.Password != nil {
